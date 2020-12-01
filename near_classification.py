@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 from sklearn import svm
 import joblib
+from data_loader import load_train, load_test_all
 
 def perf_measure(y_actual, y_hat):
     TP = 0
@@ -31,16 +32,7 @@ def perf_measure(y_actual, y_hat):
 if os.path.exists("model.sav"):
     p = joblib.load("model.sav")
 else:
-    data = pd.read_csv("data/train/strip_2_train.csv")
-    features = []
-    labels = []
-    for idx, frame in data.groupby(['frame_number', 'run_number']):
-        f = np.concatenate(frame[['ax', 'ay', 'az', 'gx', 'gy', 'gz', 'mx', 'my', 'mz', 'r']].to_numpy(dtype=np.float32, na_value=-100))
-        features.append(f)
-        labels.append(frame['near'].values[0])
-
-    features = np.array(features)
-    labels = np.array(labels)
+    features, labels = load_train(2)
 
     p = svm.LinearSVC(max_iter=3000)
     # Create and Shuffle Index
@@ -67,12 +59,7 @@ else:
     print(f"true positive {TP / (TP + FP)}")
     print(f"false positive {FP / (TP + FP)}")
 
-frames = []
-for i in range(1, 24):
-    df = pd.read_csv(f"data/test/strip_{i}_test_no_labels.csv")
-    for idx , frame in df.groupby(['frame_number']):
-        f = np.concatenate(frame[['ax', 'ay', 'az', 'gx', 'gy', 'gz', 'mx', 'my', 'mz', 'r']].to_numpy(dtype=np.float32, na_value=-100))
-        frames.append(f)
+frames = load_test_all()
 
 predictions = []
 for i in range(len(frames)):
