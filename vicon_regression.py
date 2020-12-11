@@ -38,27 +38,30 @@ near_models.append(DummyModel())
 
 predictions = []
 
+counter = 0
 for i in range(0, 3412):
     for j in range(0, 23):
         index = i + j*i
-        print(index)
         if near_models[j].predict([frames[index]])[0] == 1.0:
             predictions.append(models[j].predict([frames[index]])[0])
             break
         if j == 22:
-            predictions.append(predictions[-1])
+            counter += 1
+            if len(predictions) != 0:
+                predictions.append(predictions[-1])
+            else:
+                predictions.append([0,0])
 
+print(counter/3412)
 
-
-print(len(predictions))
 
 csv = {
-    'vicon_x': [i[0] for i in predictions],
-    'vicon_y': [i[1] for i in predictions],
-    'frame_number': [i for i in range(0, len(predictions))]
+    'Vicon_x': [i[0] for i in predictions],
+    'Vicon_y': [i[1] for i in predictions],
+    'Frame_Number': [i for i in range(0, len(predictions))]
 }
 
-df = pd.DataFrame(csv, columns=['vicon_x', 'vicon_y', 'frame_number'])
+df = pd.DataFrame(csv, columns=['Frame_Number', 'Vicon_x', 'Vicon_y'])
 df.to_csv("vicon_predictions.csv", index = False)
 
 
