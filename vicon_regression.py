@@ -22,6 +22,7 @@ for i in range(2, 22):
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
 
     regr.fit(X_train, y_train)
+    print(regr.score(X_test, y_test))
     models.append(regr)
 
 models.append(DummyModel())
@@ -41,7 +42,7 @@ predictions = []
 counter = 0
 for i in range(0, 3412):
     for j in range(0, 23):
-        index = i + j*i
+        index = i + j*3412
         if near_models[j].predict([frames[index]])[0] == 1.0:
             predictions.append(models[j].predict([frames[index]])[0])
             break
