@@ -1,6 +1,7 @@
 import joblib
 import numpy as np
 from sklearn import svm, linear_model
+from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
@@ -15,6 +16,7 @@ class DummyModel:
 
 
 models = [DummyModel()]
+average_accuracy = 0
 for i in range(2, 22):
     features, labels = load_vicon_train(i)
     regr = linear_model.LinearRegression()
@@ -22,9 +24,10 @@ for i in range(2, 22):
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
 
     regr.fit(X_train, y_train)
-    print(regr.score(X_test, y_test))
+    average_accuracy += mean_squared_error(regr.predict(X_test), y_test)
     models.append(regr)
 
+print(average_accuracy/20)
 models.append(DummyModel())
 models.append(DummyModel())
 
