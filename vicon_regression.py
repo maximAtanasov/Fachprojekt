@@ -13,6 +13,8 @@ class DummyModel:
         pass
     def predict(self, X):
         return np.zeros(1)
+    def predict_proba(self, X):
+        return np.array([[1, 0]])
 
 
 models = [DummyModel()]
@@ -27,7 +29,7 @@ for i in range(2, 22):
     average_accuracy += mean_squared_error(regr.predict(X_test), y_test)
     models.append(regr)
 
-print(average_accuracy/20)
+print(f"MSE: {average_accuracy/20}")
 models.append(DummyModel())
 models.append(DummyModel())
 
@@ -44,19 +46,32 @@ predictions = []
 
 counter = 0
 for i in range(0, 3412):
+    maxConf = 0.5
+    bestStrip = -1
     for j in range(0, 23):
         index = i + j*3412
-        if near_models[j].predict([frames[index]])[0] == 1.0:
-            predictions.append(models[j].predict([frames[index]])[0])
-            break
-        if j == 22:
-            counter += 1
-            if len(predictions) != 0:
-                predictions.append(predictions[-1])
-            else:
-                predictions.append([0,0])
+        try:
+            conf = near_models[j].predict_proba([frames[index]])[0][1] #confidence value for this strip
+            if conf > maxConf:
+                maxConf = conf
+                bestStrip = j
+        except Exception as e: #some models don't support predict_proba, fallback to old method
+            if near_models[j].predict([frames[index]])[0] == 1.0:
+                maxConf = 1
+                bestStrip = j
+                break
 
-print(counter/3412)
+    if bestStrip != -1:
+        index = i + bestStrip*3412
+        predictions.append(models[bestStrip].predict([frames[index]])[0])
+    else:
+        counter += 1
+        if len(predictions) != 0:
+            predictions.append(predictions[-1])
+        else:
+            predictions.append([0,0])
+
+print(f"None predictions: {counter/3412}")
 
 
 csv = {
