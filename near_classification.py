@@ -7,7 +7,7 @@ Created on Wed Nov 25 15:38:51 2020
 import os
 import pandas as pd
 import numpy as np
-from sklearn import svm
+from sklearn import neural_network, dummy
 import joblib
 from data_loader import load_train, load_test_all
 
@@ -38,7 +38,11 @@ for i in range(1, 24):
     else:
         features, labels = load_train(i)
 
-        model = svm.LinearSVC(max_iter=3000)
+        if i in [1, 22, 23]: #strips 1, 22, 13 sind immer near=0
+            model = dummy.DummyClassifier(strategy='constant', constant=0)
+        else:
+            model = neural_network.MLPClassifier(hidden_layer_sizes=(300,), activation='tanh', solver='adam', max_iter=500, random_state=1)
+        
         # Create and Shuffle Index
         permutation = np.random.permutation(features.shape[0])
         train_ratio = 0.8
