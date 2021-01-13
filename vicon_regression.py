@@ -1,12 +1,12 @@
 import joblib
 import numpy as np
-from sklearn import svm, linear_model
+from sklearn import linear_model, ensemble
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
-from data_loader import load_train, load_vicon_train, load_test_all
-
+from data_loader import load_vicon_train, load_test_all
+from near_classification import computeStrips
 
 class DummyModel:
     def fit(self, X_train, X_test):
@@ -21,7 +21,7 @@ models = [DummyModel()]
 average_accuracy = 0
 for i in range(2, 22):
     features, labels = load_vicon_train(i)
-    regr = linear_model.LinearRegression()
+    regr = ensemble.ExtraTreesRegressor(n_estimators=500, n_jobs=-1)
 
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2)
 
@@ -35,43 +35,25 @@ models.append(DummyModel())
 
 
 frames = load_test_all()
-near_models = [DummyModel()]
-for i in range(2,22):
+near_models = []
+for i in range(1,24):
     near_models.append(joblib.load(f"models/model_{i}.sav"))
 
-near_models.append(DummyModel())
-near_models.append(DummyModel())
-
 predictions = []
-
-counter = 0
-for i in range(0, 3412):
-    maxConf = 0.5
-    bestStrip = -1
-    for j in range(0, 23):
-        index = i + j*3412
-        try:
-            conf = near_models[j].predict_proba([frames[index]])[0][1] #confidence value for this strip
-            if conf > maxConf:
-                maxConf = conf
-                bestStrip = j
-        except Exception as e: #some models don't support predict_proba, fallback to old method
-            if near_models[j].predict([frames[index]])[0] == 1.0:
-                maxConf = 1
-                bestStrip = j
-                break
-
-    if bestStrip != -1:
-        index = i + bestStrip*3412
-        predictions.append(models[bestStrip].predict([frames[index]])[0])
+stripsPredictions = computeStrips(near_models, frames)
+for i in range(len(stripsPredictions)):
+    strips = stripsPredictions[i]
+    p = []
+    for s in strips:
+        index = i + (s-1)*3412 #s its im Bereich [1,23]
+        p.append(models[s-1].predict([frames[index]])[0])
+    assert len(p) > 0 and len(p) < 3
+    if len(p) == 1:
+        predictions.append(p[0])
     else:
-        counter += 1
-        if len(predictions) != 0:
-            predictions.append(predictions[-1])
-        else:
-            predictions.append([0,0])
-
-print(f"None predictions: {counter/3412}")
+        xPos = (p[0][0] + p[1][0])/2.0
+        yPos = (p[0][1] + p[1][1])/2.0
+        predictions.append([xPos, yPos])
 
 
 csv = {
